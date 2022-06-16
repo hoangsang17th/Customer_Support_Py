@@ -44,9 +44,9 @@ class MyWindow(QtWidgets.QDialog):
 
     # load Table View
     def loadtableView_CustomerList(self):
-        header = ['Customer ID', 'CCCD', 'Customer Name',
+        header = ['ID', 'CCCD', 'Customer Name',
                   'Phone', 'Address', 'Join Time']
-        model = TableModel.TableModel(self, header, self.customer_GetList())
+        model = TableModel.TableModel(self, header, self.getCustomers())
         self.tableView_customerList.setModel(model)
 
     # process Click button
@@ -69,7 +69,7 @@ class MyWindow(QtWidgets.QDialog):
             QtWidgets.QMessageBox.critical(None, 'Error', str(e))
 
     # process list customer
-    def customer_GetList(self):
+    def getCustomers(self):
         rows = self.Database.GetCustomers()
         data = []
         for row in rows:
@@ -89,7 +89,7 @@ class MyWindow(QtWidgets.QDialog):
             print("No frame")
 
     def loadImageSample(self, id):
-        path = 'image/User.' + id + '.jpg'
+        path = 'dist/Main/image/User.' + id + '.jpg'
         self.graphicsView_Image.setScene(None)
         scene = QtWidgets.QGraphicsScene()
         scene.addPixmap(QtGui.QPixmap(path))
@@ -106,19 +106,19 @@ class MyWindow(QtWidgets.QDialog):
             return
         result = self.Database.CreateCustomer(
             CMTND, customerName, phone, address)
-        for value in result:
-            print(value)
-            if value[0] == 0:
-                self.video.captureFace(CMTND)
-                self.video.trainingFace()
-                QtWidgets.QMessageBox.information(
-                    None, 'Susscess', 'Action susscess')
-                self.loadImageSample(CMTND)
-                self.loadtableView_CustomerList()
-                self.clear()
-            # else:
-            #     QtWidgets.QMessageBox.critical(None, 'Error', value[1])
-            #     return
+        print(result)
+
+        if result:
+            self.video.captureFace(CMTND)
+            self.video.trainingFace()
+            QtWidgets.QMessageBox.information(
+                None, 'Susscess', 'Action susscess')
+            self.loadImageSample(CMTND)
+            self.loadtableView_CustomerList()
+            self.clear()
+        else:
+            QtWidgets.QMessageBox.critical(None, 'Error', "Không tạo được người dùng")
+            return
 
     def update(self):
         customerId = self.f_customerId

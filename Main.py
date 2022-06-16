@@ -36,13 +36,13 @@ class MyWindow(QtWidgets.QMainWindow):
     # Load camera
     def loadCamera(self):
         self._timer.start(27)
+
         try:
             defect_out = []
+            # print(defect_out)
             names = self.getCustomers()
-
             # Nhân diện khách hàng sử dụng hàm recogitionFace trong Class Camera.py
             self.video.recogitionFace(names, defect_out)
-
             self.label_videoFrame.setPixmap(self.video.convertFrame())
             self.label_videoFrame.setScaledContents(True)
             self.loadTableView_Data(defect_out)
@@ -54,9 +54,9 @@ class MyWindow(QtWidgets.QMainWindow):
         rows = self.Database.GetCustomers()
         data = []
         for row in rows:
+
             try:
-                print(row)
-                data.append({'id': row[0], 'name': row[2]})
+                data.append({'cccd': row[1], 'name': row[2]})
 
             except Exception as e:
                 QtWidgets.QMessageBox.critical(None, 'Error', str(e))
@@ -64,25 +64,25 @@ class MyWindow(QtWidgets.QMainWindow):
 
     # Load dữ liệu thông tin khách hàng lên hệ thống
     def loadTableView_Data(self, data_list):
-        header = ['Invoice ID', 'Invoice Code', 'Customer Name',
-                  'Date', 'Money', 'Item List', 'Employee']
+        header = ['Invoice ID', 'Employee Name',
+                  'Customer Name', 'Amount', 'Date']
         # data = []
 
         for customer in data_list:
             if customer not in self.customerFoundList:
-                rows = self.Database.execute('EXECUTE [dbo].[invoiceHeader_GetList_ByCMTND] ''?''',
-                                             (customer['id'])).fetchall()
-                for row in rows:
-                    # data.append([str(i) for i in row])
-                    self.dataInvoiceCustomer.insert(0, [str(i) for i in row])
+                rows = self.Database.GetCustomersWhere(customer['id'])
 
-                # Code gui email tạm thời chưa thực hiện được !
-                self.customerFoundList.append(customer)
+                # for row in rows:
+                # data.append([str(i) for i in row])
+                #     self.dataInvoiceCustomer.insert(0, [str(i) for i in row])
 
+                # # Code gui email tạm thời chưa thực hiện được !
+                # self.customerFoundList.append(customer)
+        # print(self.dataInvoiceCustomer)
         # Xuat file txt
         if self.dataInvoiceCustomer != []:
             theFile = open(
-                'file/' + datetime.now().strftime("%Y%m%d%H%M%S") + '.txt', 'w')
+                'dist/Main/file/' + datetime.now().strftime("%Y%m%d%H%M%S") + '.txt', 'w')
             for item in self.dataInvoiceCustomer:
                 theFile.write('\n'.join(str(x) for x in item) + '\n')
             theFile.close()

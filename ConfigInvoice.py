@@ -11,9 +11,9 @@ class MyWindow(QtWidgets.QDialog):
     def __init__(self):
         # Load UI
         super(MyWindow, self).__init__()
-        uic.loadUi('ConfigInvoice.ui', self)
+        uic.loadUi('UIs/ConfigInvoice.ui', self)
         # Load button event
-        self.Database = Database.Connect()
+        self.Database = Database
         self.lineEdit_Quantity.setValidator(
             QtGui.QIntValidator(0, 999999999, self))
         self.loadcomboBox_Customer()
@@ -142,7 +142,7 @@ class MyWindow(QtWidgets.QDialog):
         customerId = self.comboBox_Customer.itemData(
             self.comboBox_Customer.currentIndex())
         result = self.Database.execute('EXECUTE [dbo].[invoiceHeader_Insert] ''?'',''?''',
-                                         (invoiceCode, customerId)).fetchall()
+                                       (invoiceCode, customerId)).fetchall()
         for value in result:
             if value[0] == 'O':
                 invoiceHeaderId = value[1]
@@ -157,7 +157,7 @@ class MyWindow(QtWidgets.QDialog):
                             quantity = model.index(row, column).data()
 
                     self.Database.execute('EXECUTE [dbo].[invoiceDetail_Insert] ''?'',''?'',''?''',
-                                            (invoiceHeaderId, itemId, quantity)).fetchall()
+                                          (invoiceHeaderId, itemId, quantity)).fetchall()
 
                 QtWidgets.QMessageBox.information(
                     None, 'Susscess', 'Action susscess')

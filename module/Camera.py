@@ -10,7 +10,7 @@ class Video():
         self.cam = cv2.VideoCapture(capture)
         self.currentFrame = np.array([])
         self.faceCascade = cv2.CascadeClassifier(
-            './data/haarcascades/haarcascade_frontalface_default.xml')
+            'dist/Main/data/haarcascades/haarcascade_frontalface_default.xml')
         self.recognizer = cv2.face.LBPHFaceRecognizer_create()
         self.checkTrainerFound = os.path.isfile(
             'dist/Main/trainer/trainer.yml')
@@ -124,7 +124,7 @@ class Video():
         confidence = 0.  # độ chính xác giữa ảnh nhận diện và ảnh huấn luyện
         minW = 0.1 * self.cam.get(3)
         minH = 0.1 * self.cam.get(4)
-        ret, img = self.cam.read()
+        ret, img = self.cam.read(0)
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         if (ret == True):
             faces = self.faceCascade.detectMultiScale(
@@ -140,10 +140,13 @@ class Video():
                     id, confidence = self.recognizer.predict(
                         gray[y:y + h, x:x + w])
                     # Check if confidence is less them 100 ==> is perfect match
+
                     if (confidence < 100):
-                        result_list = [
-                            d for d in names if d.get('id', '') == id]
-                        name = result_list[0]['name']
+                        # result_list = [
+                        for e in names:
+                            # print(e)
+                            if(e["cccd"] == id):
+                                name = e['name']
 
                         # Only process if detection than 45%
                         if confidence <= 50:

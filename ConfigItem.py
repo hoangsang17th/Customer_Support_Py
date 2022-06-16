@@ -10,9 +10,9 @@ class MyWindow(QtWidgets.QDialog):
     def __init__(self):
         # Load UI
         super(MyWindow, self).__init__()
-        uic.loadUi('ConfigItem.ui', self)
+        uic.loadUi('UIs/ConfigItem.ui', self)
         # Load button event
-        self.Database = Database.Connect()
+        self.Database = Database
         self.pushButton_Insert.clicked.connect(self.insert)
         self.pushButton_Update.clicked.connect(self.update)
         self.pushButton_Delete.clicked.connect(self.delete)
@@ -36,19 +36,19 @@ class MyWindow(QtWidgets.QDialog):
 
     def loadcomboBox_Employee(self):
         self.comboBox_Employee.clear()
-        rows = self.Database.execute(
-            'EXECUTE [dbo].[employee_GetList]').fetchall()
+        rows = self.Database.GetEmployees()
         self.comboBox_Employee.addItem('', -1)
+
         for row in rows:
             try:
                 self.comboBox_Employee.addItem(
-                    row.employee_name, row.employee_id)
+                    row[1], row[0])
             except Exception as e:
                 QtWidgets.QMessageBox.critical(None, 'Error', str(e))
 
     def loadtableView_ItemList(self):
-        header = ['Item ID', 'Item Code',
-                  'Item Name', 'Money', 'Date', 'Employee']
+        header = ['Item ID',
+                  'Item Name', 'Amount', 'Employee', 'Date']
         model = TableModel.TableModel(self, header, self.item_GetList())
         self.tableView_itemList.setModel(model)
 
@@ -58,13 +58,11 @@ class MyWindow(QtWidgets.QDialog):
                 data = index.data()
                 if index.column() == 0:
                     self.f_itemId = data
-                if index.column() == 1:
-                    self.lineEdit_ItemCode.setText(data)
-                elif index.column() == 2:
+                elif index.column() == 1:
                     self.lineEdit_ItemName.setText(data)
-                elif index.column() == 3:
+                elif index.column() == 2:
                     self.lineEdit_Money.setText(data)
-                elif index.column() == 5:
+                elif index.column() == 3:
                     index = self.comboBox_Employee.findText(
                         data, QtCore.Qt.MatchFixedString)
                     if index >= 0:
@@ -73,64 +71,51 @@ class MyWindow(QtWidgets.QDialog):
             QtWidgets.QMessageBox.critical(None, 'Error', str(e))
 
     def item_GetList(self):
-        rows = self.Database.execute(
-            'EXECUTE [dbo].[item_GetList]').fetchall()
-        data = []
-        for row in rows:
-            try:
-                data.append([str(i) for i in row])
-            except Exception as e:
-                QtWidgets.QMessageBox.critical(None, 'Error', str(e))
-        return data
+        rows = self.Database.GetItems()
+        return rows
 
     def captureCAM(self):
         pass
 
     def insert(self):
-        itemCode = str(self.lineEdit_ItemCode.text())
         itemName = str(self.lineEdit_ItemName.text())
         money = str(self.lineEdit_Money.text())
         employeeId = self.comboBox_Employee.itemData(
             self.comboBox_Employee.currentIndex())
-        if (itemCode == '' or itemName == '' or employeeId == 0):
+        if (itemName == '' or employeeId == 0):
             QtWidgets.QMessageBox.critical(
                 None, 'Error', 'Not enough inputed (*) value')
             return
 
-        result = self.Database.execute('EXECUTE [dbo].[item_Insert] ''?'',''?'',''?'',''?''',
-                                         (itemCode, itemName, money, employeeId)).fetchall()
-        for value in result:
-            if value[0] == 'O':
-                QtWidgets.QMessageBox.information(
-                    None, 'Susscess', 'Action susscess')
-                self.loadtableView_ItemList()
-                self.clear()
-            else:
-                QtWidgets.QMessageBox.critical(None, 'Error', value[1])
-                return
+        result = self.Database.CreateItem(itemName, money, employeeId)
+        if result:
+            QtWidgets.QMessageBox.information(
+                None, 'Susscess', 'Action susscess')
+            self.loadtableView_ItemList()
+            self.clear()
+        else:
+            QtWidgets.QMessageBox.critical(None, 'Error', "Không thể tạo")
+            return
 
     def update(self):
         itemId = self.f_itemId
-        itemCode = str(self.lineEdit_ItemCode.text())
         itemName = str(self.lineEdit_ItemName.text())
         money = str(self.lineEdit_Money.text())
         employeeId = self.comboBox_Employee.itemData(
             self.comboBox_Employee.currentIndex())
-        if itemId == 0 or itemCode == '' or itemName == '' or employeeId == 0:
+        if itemId == 0 or itemName == '' or employeeId == 0:
             QtWidgets.QMessageBox.critical(
                 None, 'Error', 'Not enough inputed (*) value')
             return
 
-        result = self.Database.execute('EXECUTE [dbo].[item_Update] ''?'',''?'',''?'',''?'',''?''',
-                                         (itemId, itemCode, itemName, money, employeeId)).fetchall()
-        for value in result:
-            if value[0] == 'O':
-                QtWidgets.QMessageBox.information(
-                    None, 'Susscess', 'Action susscess')
-                self.loadtableView_ItemList()
-            else:
-                QtWidgets.QMessageBox.critical(None, 'Error', value[1])
-                return
+        result = self.Database.UpdateItem(itemId, itemName, money, employeeId)
+        if result:
+            QtWidgets.QMessageBox.information(
+                None, 'Susscess', 'Action susscess')
+            self.loadtableView_ItemList()
+        else:
+            QtWidgets.QMessageBox.critical(None, 'Error', "Không thể cập nhập")
+            return
 
     def delete(self):
         itemId = self.f_itemId
@@ -144,23 +129,21 @@ class MyWindow(QtWidgets.QDialog):
                                                  QtWidgets.QMessageBox.No)
         if confirm == QtWidgets.QMessageBox.Yes:
             if len(itemId) > 0:
-                result = self.Database.execute('EXECUTE [dbo].[item_Delete] ''?''',
-                                                 (itemId)).fetchall()
-                for value in result:
-                    if value[0] == 'O':
-                        QtWidgets.QMessageBox.information(
-                            None, 'Susscess', 'Action susscess')
-                        self.loadtableView_ItemList()
-                        self.clear()
-                    else:
-                        QtWidgets.QMessageBox.critical(None, 'Error', value[1])
-                        return
+                result = self.Database.DeleteItem(itemId)
+                if result:
+                    QtWidgets.QMessageBox.information(
+                        None, 'Susscess', 'Action susscess')
+                    self.loadtableView_ItemList()
+                    self.clear()
+                else:
+                    QtWidgets.QMessageBox.critical(
+                        None, 'Error', "Không thể xoá")
+                    return
         else:
             return
 
     def clear(self):
         self.f_itemId = 0
-        self.lineEdit_ItemCode.setText('')
         self.lineEdit_ItemName.setText('')
         self.lineEdit_Money.setText('')
         self.loadcomboBox_Employee()

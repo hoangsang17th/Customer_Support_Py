@@ -10,9 +10,9 @@ class MyWindow(QtWidgets.QDialog):
     def __init__(self):
         # Load UI
         super(MyWindow, self).__init__()
-        uic.loadUi('ConfigEmployee.ui', self)
+        uic.loadUi('UIs/ConfigEmployee.ui', self)
         # Load button event
-        self.Database = Database.Connect()
+        self.Database = Database
         self.pushButton_Insert.clicked.connect(self.insert)
         self.pushButton_Update.clicked.connect(self.update)
         self.pushButton_Delete.clicked.connect(self.delete)
@@ -32,8 +32,7 @@ class MyWindow(QtWidgets.QDialog):
         self.exec_()
 
     def loadtableView_EmployeeList(self):
-        header = ['Employee ID', 'Employee Code',
-                  'Employee Name', 'Email', 'Date']
+        header = ['Employee ID', 'Employee Name', 'Email', 'Date']
         model = TableModel.TableModel(self, header, self.employee_GetList())
         self.tableView_employeeList.setModel(model)
 
@@ -44,17 +43,14 @@ class MyWindow(QtWidgets.QDialog):
                 if index.column() == 0:
                     self.f_employeeId = data
                 elif index.column() == 1:
-                    self.lineEdit_EmployeeCode.setText(data)
-                elif index.column() == 2:
                     self.lineEdit_EmployeeName.setText(data)
-                elif index.column() == 3:
+                elif index.column() == 2:
                     self.lineEdit_Email.setText(data)
         except Exception as e:
             QtWidgets.QMessageBox.critical(None, 'Error', str(e))
 
     def employee_GetList(self):
-        rows = self.Database.execute(
-            'EXECUTE [dbo].[employee_GetList]').fetchall()
+        rows = self.Database.GetEmployees()
         data = []
         for row in rows:
             try:
@@ -67,47 +63,41 @@ class MyWindow(QtWidgets.QDialog):
         pass
 
     def insert(self):
-        employeeCode = str(self.lineEdit_EmployeeCode.text())
         employeeName = str(self.lineEdit_EmployeeName.text())
         email = str(self.lineEdit_Email.text())
-        if (employeeCode == '' or employeeName == '' or email == ''):
+        if (employeeName == '' or email == ''):
             QtWidgets.QMessageBox.critical(
                 None, 'Error', 'Not enough inputed (*) value')
             return
 
-        result = self.Database.execute('''
-        INSERT INTO  dbo.EMPLOYEE (employee_id, employee_code, employee_name) Values ''',
-                                         (employeeCode, employeeName, email)).fetchall()
-        for value in result:
-            if value[0] == 'O':
-                QtWidgets.QMessageBox.information(
-                    None, 'Susscess', 'Action susscess')
-                self.loadtableView_EmployeeList()
-                self.clear()
-            else:
-                QtWidgets.QMessageBox.critical(None, 'Error', value[1])
-                return
+        result = self.Database.CreateEmployee(employeeName, email)
+        if result:
+            QtWidgets.QMessageBox.information(
+                None, 'Susscess', 'Action susscess')
+            self.loadtableView_EmployeeList()
+            self.clear()
+        else:
+            QtWidgets.QMessageBox.critical(
+                None, 'Error', "Không tạo được nhân viên này :))")
+            return
 
     def update(self):
         employeeId = self.f_employeeId
-        employeeCode = str(self.lineEdit_EmployeeCode.text())
         employeeName = str(self.lineEdit_EmployeeName.text())
         email = str(self.lineEdit_Email.text())
-        if employeeId == 0 or employeeCode == '' or employeeName == '' or email == '':
+        if employeeId == 0 or employeeName == '' or email == '':
             QtWidgets.QMessageBox.critical(
                 None, 'Error', 'Not enough inputed (*) value')
             return
 
-        result = self.Database.execute('EXECUTE [dbo].[employee_Update] ''?'',''?'',''?'',''?''',
-                                         (employeeId, employeeCode, employeeName, email)).fetchall()
-        for value in result:
-            if value[0] == 'O':
-                QtWidgets.QMessageBox.information(
-                    None, 'Susscess', 'Action susscess')
-                self.loadtableView_EmployeeList()
-            else:
-                QtWidgets.QMessageBox.critical(None, 'Error', value[1])
-                return
+        result = self.Database.UpdateEmployee(employeeId, employeeName, email)
+        if result:
+            QtWidgets.QMessageBox.information(
+                None, 'Susscess', 'Action susscess')
+            self.loadtableView_EmployeeList()
+        else:
+            QtWidgets.QMessageBox.critical(None, 'Error', "Cập nhật thất bại")
+            return
 
     def delete(self):
         employeeId = self.f_employeeId
@@ -121,28 +111,28 @@ class MyWindow(QtWidgets.QDialog):
                                                  QtWidgets.QMessageBox.No)
         if confirm == QtWidgets.QMessageBox.Yes:
             if len(employeeId) > 0:
-                result = self.Database.execute('EXECUTE [dbo].[employee_Delete] ''?''',
-                                                 (employeeId)).fetchall()
-                for value in result:
-                    if value[0] == 'O':
-                        QtWidgets.QMessageBox.information(
-                            None, 'Susscess', 'Action susscess')
-                        self.loadtableView_EmployeeList()
-                        self.clear()
-                    else:
-                        QtWidgets.QMessageBox.critical(None, 'Error', value[1])
-                        return
+                result = self.Database.DeleteEmployee(employeeId)
+
+                if result:
+                    QtWidgets.QMessageBox.information(
+                        None, 'Susscess', 'Action susscess')
+                    self.loadtableView_EmployeeList()
+                    self.clear()
+                else:
+                    QtWidgets.QMessageBox.critical(
+                        None, 'Error', "Dữ liệu không tồn tại")
+                    return
         else:
             return
 
     def clear(self):
         self.f_employeeId = 0
-        self.lineEdit_EmployeeCode.setText('')
         self.lineEdit_EmployeeName.setText('')
         self.lineEdit_Email.setText('')
 
 
 if __name__ == '__main__':
     app = QtWidgets.QApplication(sys.argv)
+    app.setQuitOnLastWindowClosed(False)
     window = MyWindow()
     sys.exit(app.exec_())
