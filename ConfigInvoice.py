@@ -40,8 +40,8 @@ class MyWindow(QtWidgets.QDialog):
         self.exec_()
 
     def loadtableView_InvoiceHeader(self):
-        header = ['Invoice ID', 'Invoice Code',
-                  'Customer Name', 'Date', 'Total Money']
+        header = ['Invoice ID', 'Employee Name',
+                  'Customer Name', 'Amount', 'Date']
         model = TableModel.TableModel(self, header, self.item_GetList())
         self.tableView_InvoiceHeader.setModel(model)
 
@@ -61,8 +61,7 @@ class MyWindow(QtWidgets.QDialog):
             QtWidgets.QMessageBox.critical(None, 'Error', str(e))
 
     def item_GetList(self):
-        rows = self.Database.execute(
-            'EXECUTE [dbo].[invoiceHeader_GetList]').fetchall()
+        rows = self.Database.GetInvoices()
         data = []
         for row in rows:
             try:
@@ -73,25 +72,23 @@ class MyWindow(QtWidgets.QDialog):
 
     def loadcomboBox_Customer(self):
         self.comboBox_Customer.clear()
-        rows = self.Database.execute(
-            'EXECUTE [dbo].[customer_GetList]').fetchall()
+        rows = self.Database.GetCustomers()
         self.comboBox_Customer.addItem('', -1)
         for row in rows:
             try:
                 self.comboBox_Customer.addItem(
-                    row.customer_name, row.customer_id)
+                    row[2], row[0])
             except Exception as e:
                 QtWidgets.QMessageBox.critical(None, 'Error', str(e))
 
     def loadcomboBox_Item(self):
         self.comboBox_Item.clear()
-        rows = self.Database.execute(
-            'EXECUTE [dbo].[item_GetList]').fetchall()
+        rows = self.Database.GetItemsName()
         self.comboBox_Item.addItem('', -1)
         for row in rows:
             try:
                 self.comboBox_Item.addItem(
-                    row.item_name + ' (' + str(row.money) + ')', row.item_id)
+                    row[1] + ' (' + str(row[2]) + ')', row[0])
             except Exception as e:
                 QtWidgets.QMessageBox.critical(None, 'Error', str(e))
 

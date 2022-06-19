@@ -39,10 +39,11 @@ class MyWindow(QtWidgets.QMainWindow):
 
         try:
             defect_out = []
-            # print(defect_out)
             names = self.getCustomers()
+
             # Nhân diện khách hàng sử dụng hàm recogitionFace trong Class Camera.py
             self.video.recogitionFace(names, defect_out)
+
             self.label_videoFrame.setPixmap(self.video.convertFrame())
             self.label_videoFrame.setScaledContents(True)
             self.loadTableView_Data(defect_out)
@@ -66,18 +67,18 @@ class MyWindow(QtWidgets.QMainWindow):
     def loadTableView_Data(self, data_list):
         header = ['Invoice ID', 'Employee Name',
                   'Customer Name', 'Amount', 'Date']
-        # data = []
+        data = []
 
         for customer in data_list:
             if customer not in self.customerFoundList:
-                rows = self.Database.GetCustomersWhere(customer['id'])
+                rows = self.Database.GetInvoicesWhere(customer['id'])
 
-                # for row in rows:
-                # data.append([str(i) for i in row])
-                #     self.dataInvoiceCustomer.insert(0, [str(i) for i in row])
+                for row in rows:
+                    data.append([str(i) for i in row])
+                    self.dataInvoiceCustomer.insert(0, [str(i) for i in row])
 
-                # # Code gui email tạm thời chưa thực hiện được !
-                # self.customerFoundList.append(customer)
+                # Code gui email tạm thời chưa thực hiện được !
+                self.customerFoundList.append(customer)
         # print(self.dataInvoiceCustomer)
         # Xuat file txt
         if self.dataInvoiceCustomer != []:
